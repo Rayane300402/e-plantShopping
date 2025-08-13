@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import "./ProductList.css";
 import CartItem from "./CartItem";
-import { useSelector, useDispatch } from "react-redux"; 
+import { useSelector, useDispatch } from "react-redux";
 import { addItem, removeItem, updateQuantity } from "./CartSlice";
 
 function ProductList({ onHomeClick }) {
@@ -12,6 +12,11 @@ function ProductList({ onHomeClick }) {
   const [addedToCart, setAddedToCart] = useState({});
 
   const dispatch = useDispatch();
+  const cartItems = useSelector((state) => state.cart.items);
+
+  const cartCount = Array.isArray(cartItems)
+    ? cartItems.reduce((n, item) => n + (item.quantity ?? 1), 0)
+    : 0;
 
   const plantsArray = [
     {
@@ -299,12 +304,18 @@ function ProductList({ onHomeClick }) {
   const handleAddToCart = (e) => {
     dispatch(addItem(e));
 
-    setAddedToCart((prevState)=> ({
-        ...prevState,
-        [e.name]: true
-    }))
-  }
-
+    setAddedToCart((prevState) => ({
+      ...prevState,
+      [e.name]: true,
+    }));
+  };
+  useEffect(() => {
+    const flags = {};
+    for (const item of cartItems) {
+      flags[item.name] = true; 
+    }
+    setAddedToCart(flags); 
+  }, [cartItems]);
 
   return (
     <div>
@@ -354,6 +365,8 @@ function ProductList({ onHomeClick }) {
                     id="mainIconPathAttribute"
                   ></path>
                 </svg>
+
+                {cartCount}
               </h1>
             </a>
           </div>
@@ -361,56 +374,42 @@ function ProductList({ onHomeClick }) {
       </div>
       {!showCart ? (
         <div className="product-grid">
-          {plantsArray.map(
-            (
-              category,
-              index // Loop through each category in plantsArray
-            ) => (
-              <div key={index}>
+          {plantsArray.map((category, index) => (
+            <div key={index}>
+              {" "}
+              <h1>
+                <div>{category.category}</div> {/* Display the category name */}
+              </h1>
+              <div className="product-list">
                 {" "}
-                {/* Unique key for each category div */}
-                <h1>
-                  <div>{category.category}</div>{" "}
-                  {/* Display the category name */}
-                </h1>
-                <div className="product-list">
-                  {" "}
-                  {/* Container for the list of plant cards */}
-                  {category.plants.map(
-                    (
-                      plant,
-                      plantIndex // Loop through each plant in the current category
-                    ) => (
-                      <div className="product-card" key={plantIndex}>
-                        {" "}
-                        {/* Unique key for each plant card */}
-                        <img
-                          className="product-image"
-                          src={plant.image} // Display the plant image
-                          alt={plant.name} // Alt text for accessibility
-                        />
-                        <div className="product-title">{plant.name}</div>{" "}
-                        {/* Display plant name */}
-                        {/* Display other plant details like description and cost */}
-                        <div className="product-description">
-                          {plant.description}
-                        </div>{" "}
-                        {/* Display plant description */}
-                        <div className="product-cost">${plant.cost}</div>{" "}
-                        {/* Display plant cost */}
-                        <button
-                          className="product-button"
-                          onClick={() => handleAddToCart(plant)} // Handle adding plant to cart
-                        >
-                          Add to Cart
-                        </button>
-                      </div>
-                    )
-                  )}
-                </div>
+                {category.plants.map((plant, plantIndex) => (
+                  <div className="product-card" key={plantIndex}>
+                    {" "}
+                    <img
+                      className="product-image"
+                      src={plant.image}
+                      alt={plant.name}
+                    />
+                    <div className="product-title">{plant.name}</div>{" "}
+                    <div className="product-description">
+                      {plant.description}
+                    </div>{" "}
+                    <div className="product-cost">${plant.cost}</div>{" "}
+                    <button
+                      className={`product-button ${
+                        addedToCart[plant.name] ? "added-to-cart" : ""
+                      }`}
+                      onClick={() => handleAddToCart(plant)}
+                    >
+                      {addedToCart[plant.name]
+                        ? "Added to Cart"
+                        : "Add to Cart"}
+                    </button>
+                  </div>
+                ))}
               </div>
-            )
-          )}
+            </div>
+          ))}
         </div>
       ) : (
         <CartItem onContinueShopping={handleContinueShopping} />
